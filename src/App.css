@@ -36,3 +36,25 @@
     transform: rotate(360deg);
   }
 }
+
+.navul
+{
+  display: flex;
+  list-style-type: none;
+  flex-wrap: wrap;
+}
+
+.navlink
+{
+  text-decoration: none;
+  font-size: 2rem;
+  color: white;
+}
+
+.navli
+{
+  background-color: green;
+  border-radius: 5px;
+  margin-right: 2px;
+  padding: 5px;
+}
