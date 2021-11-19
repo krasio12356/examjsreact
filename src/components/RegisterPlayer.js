@@ -1,7 +1,7 @@
-import './Register.module.css';
+import './RegisterPlayer.module.css';
 import React from "react";
 
-class Register extends React.Component
+class RegisterPlayer extends React.Component
 {
     constructor(props)
     {
@@ -11,7 +11,7 @@ class Register extends React.Component
             name: '',
             password: '',
             confirm: '',
-            errors: []
+            errors: ''
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
@@ -35,7 +35,8 @@ class Register extends React.Component
     {
         e.preventDefault();
         let err = '';
-        if (this.state.name == '')
+        this.setState({errors: err});
+        if (this.state.name === '')
         {
             err += '<br>Name is compulsory.';
             this.setState({errors: err});
@@ -45,29 +46,30 @@ class Register extends React.Component
             err += '<br>Password must be at least 3 symbols long.';
             this.setState({errors: err});
         }
-        if (this.state.password != this.state.confirm)
+        if (this.state.password !== this.state.confirm)
         {
             err += '<br>Password and confirm password must be the same.';
             this.setState({errors: err});
         }
-        if (this.state.errors == '')
+        if (this.state.errors === '')
         {
             try
             {
                 let obj =
                 {
-                    name: this.state.name,
-                    password: this.state.password
+                    playername: this.state.name,
+                    password: this.state.password,
                 };
-                let response = await fetch('http://localhost:5000/register',
+                let response = await fetch('http://localhost:5000/registerPlayer',
                 {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     body: JSON.stringify(obj)
                 });
-                //let data = await response.json();
+                let data = await response.json();
                 
-                //this.props.history.push('/');
+                
+                this.props.history.push('/');
             }
             catch(er)
             {
@@ -78,18 +80,20 @@ class Register extends React.Component
     render()
     {
         return (
-            <form className='regform' onSubmit={this.handleSubmit}>
-                <p><label>Name:</label></p>
-                <p><input className='reginput' type="text" name='name' value={this.state.value} onChange={this.handleChange} /></p>        
-                <p><label>Password:</label></p>
-                <p><input className='reginput' type="password" name='password' value={this.state.value} onChange={this.handleChange} /> </p>       
-                <p><label>Confirm password:</label></p>
-                <p><input className='reginput' type="password" name='confirm' value={this.state.value} onChange={this.handleChange} /> </p>       
-                <p><input className='reginput' type="submit" value="Submit" /></p>
-                <p className='errorText' dangerouslySetInnerHTML={{__html: this.state.errors}}></p>
-            </form>
+            <div class="main">
+                <form className='regform' onSubmit={this.handleSubmit}>
+                    <p><label>Name:</label></p>
+                    <p><input className='reginput' type="text" name='name' value={this.state.name} onChange={this.handleChange} /></p>        
+                    <p><label>Password:</label></p>
+                    <p><input className='reginput' type="password" name='password' value={this.state.password} onChange={this.handleChange} /> </p>       
+                    <p><label>Confirm password:</label></p>
+                    <p><input className='reginput' type="password" name='confirm' value={this.state.confirm} onChange={this.handleChange} /> </p>
+                    <p><input className='reginput' type="submit" value="Submit" /></p>
+                    <p className='errorText' dangerouslySetInnerHTML={{__html: this.state.errors}}></p>
+                </form>
+            </div>
         );
     }
 }
 
-export default Register
+export default RegisterPlayer

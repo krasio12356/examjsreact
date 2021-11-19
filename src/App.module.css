@@ -58,3 +58,12 @@
   margin-right: 2px;
   padding: 5px;
 }
+
+.pack
+{
+  background-color: black;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

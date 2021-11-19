@@ -1,0 +1,12 @@
+.frame
+{
+    position: relative;
+    background-color: green;
+    width: 100%;
+}
+
+.board
+{
+    position: absolute;
+    background-color: coral;
+}
