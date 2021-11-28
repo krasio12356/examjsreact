@@ -14,6 +14,7 @@ import whiteQueen from '../img/qw.png';
 import whiteKing from '../img/kw.png';
 import React from "react";
 import p from '../services/position';
+{/*import chess from '../services/chess';*/}
 
 let figures =
 {
@@ -41,47 +42,62 @@ class Play extends React.Component
         {
             info: 
                 [
-                  'rnbqkbnr',
-                  'pppppppp',
-                  'eeeeeeee',
-                  'eeeeeeee',
-                  'eeeeeeee',
-                  'eeeeeeee',
-                  'PPPPPPPP',
-                  'RNBQKBNR'
+                  ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                  ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                  ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'e'],
+                  ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'e'],
+                  ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'e'],
+                  ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'e'],
+                  ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                  ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
                 ]
             
         };
-        this.allowDrop = this.allowDrop.bind(this);
-        this.drag = this.drag.bind(this);
-        this.drop = this.drop.bind(this);
+        this.handleDragOver = this.handleDragOver.bind(this);
+        this.handleDrag = this.handleDrag.bind(this);
+        this.handleDrop = this.handleDrop.bind(this);
         this.beginMove = undefined;
         this.endMove = undefined;
         this.movedPiece = undefined;
     }
 
-    allowDrop(ev) 
+    handleDragOver(ev) 
     {
         ev.preventDefault();
     }
       
-    drag(ev) 
+    handleDrag(ev) 
     {
-        ev.dataTransfer.setData("text", ev.target.className);
+        this.movedPiece = ev.target.className;
         this.beginMove = Number(ev.target.parentElement.id);
     }
       
-    drop(ev) 
+    handleDrop(ev) 
     {
         ev.preventDefault();
-        this.movedPiece = ev.dataTransfer.getData("text");
-        //ev.target.appendChild(document.getElementById(data));
-        this.endMove = Number(ev.target.id);
+        if (ev.target.nodeName == 'DIV')
+        {
+            this.endMove = Number(ev.target.id);
+        }
+        else
+        {
+            this.endMove = Number(ev.target.parentElement.id);
+        }
+        let arrangement = this.state.info;
+        let xyBegin = p.oneDimTwoDim(this.beginMove);
+        let xyEnd = p.oneDimTwoDim(this.endMove);
+        arrangement[xyBegin[1]][xyBegin[0]] = 'e';
+        arrangement[xyEnd[1]][xyEnd[0]] = this.movedPiece;
+        this.setState(
+            {
+                info: arrangement
+            }
+        );
     }
 
     render()
     {
-        let height, width, top, left, boardHeight, boardWidth; 
+        let height, width, top, left, boardHeight, boardWidth, notationTop; 
         let squareWidth, squareWidthCSS;
         let squares = [];
         let pieces = [];
@@ -103,10 +119,12 @@ class Play extends React.Component
                 boardWidth = Math.floor(width / 2);
                 top = Math.floor((height - boardHeight) / 2);
             }
+            top = 10;
+            notationTop = top + boardHeight - boardHeight % 8 + 10 + 'px';
             top = top + 'px';
             left = left + 'px';
-            boardHeight = boardHeight + 'px';
-            boardWidth = boardWidth + 'px';
+            boardHeight = boardHeight - boardHeight % 8 + 'px';
+            boardWidth = boardWidth - boardWidth % 8 + 'px';
             squareWidth = Math.floor(Number(boardWidth.slice(0, -2)) / 8);
             squareWidthCSS = squareWidth + 'px';
             for(let i = 0; i < 64; i++)
@@ -117,7 +135,7 @@ class Play extends React.Component
                 let squareLeftCSS = squareLeft + 'px';
                 let colors = ['chocolate', 'brown'];
                 let colorIndex = (Math.floor(i / 8) % 2) ^ (i % 2);
-                squares.push(<div key={i} id={i.toString()} style={{position : 'absolute', top : squareTopCSS, left : squareLeftCSS, width : squareWidthCSS, height : squareWidthCSS}}><img className={this.state.info[p.oneDimTwoDim(i)[0]][p.oneDimTwoDim(i)[1]]} src={figures[this.state.info[p.oneDimTwoDim(i)[0]][p.oneDimTwoDim(i)[1]]]}/></div>);
+                squares.push(<div onDrop={this.handleDrop} onDragOver={this.handleDragOver} key={i} id={i.toString()} style={{position : 'absolute', backgroundColor : colors[colorIndex], top : squareTopCSS, left : squareLeftCSS, width : squareWidthCSS, height : squareWidthCSS}}><img style={{width : '100%', height : '100%' }} draggable='true' onDrag={this.handleDrag} className={this.state.info[p.oneDimTwoDim(i)[1]][p.oneDimTwoDim(i)[0]]} src={figures[this.state.info[p.oneDimTwoDim(i)[1]][p.oneDimTwoDim(i)[0]]]}/></div>);
             }
         }
         
@@ -125,6 +143,14 @@ class Play extends React.Component
             <div className="frame" style={{height : `${this.props.ht}`}}>
                 <div className='board' style={{top : top, left : left, width : boardWidth, height : boardHeight}}>
                     {squares}
+                </div>
+                <div className='notation' style={{top : notationTop}}>
+                    <p id='whiteNotation'>
+                        White notation:
+                    </p>
+                    <p id='blackNotation'>
+                        Black notation:
+                    </p>
                 </div>
             </div>
         );

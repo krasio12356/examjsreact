@@ -10,3 +10,12 @@
     position: absolute;
     background-color: coral;
 }
+
+.notation
+{
+    position: absolute;
+    background-color: black;
+    color: white;
+    width: 100%;
+}
+

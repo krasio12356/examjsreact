@@ -46,7 +46,7 @@ class  App extends React.Component
                 <Link to="/registerPlayer" className='navlink'>RegisterPlayer</Link>
               </li>
               <li className='navli'>
-                <Link to="/users" className='navlink'>Users</Link>
+                <Link to="/play" className='navlink'>Play</Link>
               </li>
             </ul>
           </nav>

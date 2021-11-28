@@ -53,8 +53,8 @@ class Home extends React.Component
             }
             top = top + 'px';
             left = left + 'px';
-            boardHeight = boardHeight + 'px';
-            boardWidth = boardWidth + 'px';
+            boardHeight = boardHeight - boardHeight % 8 + 'px';
+            boardWidth = boardWidth - boardWidth % 8 + 'px';
             squareWidth = Math.floor(Number(boardWidth.slice(0, -2)) / 8);
             squareWidthCSS = squareWidth + 'px';
             for(let i = 0; i < 64; i++)
