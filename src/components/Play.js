@@ -14,7 +14,7 @@ import whiteQueen from '../img/qw.png';
 import whiteKing from '../img/kw.png';
 import React from "react";
 import p from '../services/position';
-{/*import chess from '../services/chess';*/}
+import chess from '../services/chess';
 
 let figures =
 {
@@ -50,8 +50,8 @@ class Play extends React.Component
                   ['e', 'e', 'e', 'e', 'e', 'e', 'e', 'e'],
                   ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
                   ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-                ]
-            
+                ],
+            history: chess.initialHistory
         };
         this.handleDragOver = this.handleDragOver.bind(this);
         this.handleDrag = this.handleDrag.bind(this);

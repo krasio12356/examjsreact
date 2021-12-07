@@ -2,7 +2,7 @@ import './RegisterPlayer.module.css';
 import React from "react";
 import { Redirect } from 'react-router';
 
-class RegisterPlayer extends React.Component
+class Login extends React.Component
 {
     constructor(props)
     {
@@ -11,7 +11,6 @@ class RegisterPlayer extends React.Component
         {
             name: '',
             password: '',
-            confirm: '',
             temp: undefined
         };
         this.redirect = false;
@@ -29,10 +28,6 @@ class RegisterPlayer extends React.Component
         {
             this.setState({password: e.target.value});
         }
-        else if (e.target.name === 'confirm')
-        {
-            this.setState({confirm: e.target.value});
-        }
     }
     async handleSubmit(e)
     {
@@ -46,10 +41,6 @@ class RegisterPlayer extends React.Component
         {
             this.errors += '<br>Password must be at least 3 symbols long.';
         }
-        if (this.state.password !== this.state.confirm)
-        {
-            this.errors += '<br>Password and confirm password must be the same.';
-        }
         if (this.errors === '')
         {
             try
@@ -59,7 +50,7 @@ class RegisterPlayer extends React.Component
                     playername: this.state.name,
                     password: this.state.password,
                 };
-                let response = await fetch('http://localhost:5000/registerPlayer',
+                let response = await fetch('http://localhost:5000/login',
                 {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -71,6 +62,7 @@ class RegisterPlayer extends React.Component
                 sessionStorage.setItem('token',data.token);
                 sessionStorage.setItem('rank', data.rank);
                 window['handleLogin']();
+                
                 this.redirect = true;
             }
             catch(er)
@@ -94,8 +86,6 @@ class RegisterPlayer extends React.Component
                     <p><input className='reginput' type="text" name='name' value={this.state.name} onChange={this.handleChange} /></p>        
                     <p><label>Password:</label></p>
                     <p><input className='reginput' type="password" name='password' value={this.state.password} onChange={this.handleChange} /> </p>       
-                    <p><label>Confirm password:</label></p>
-                    <p><input className='reginput' type="password" name='confirm' value={this.state.confirm} onChange={this.handleChange} /> </p>
                     <p><input className='reginput' type="submit" value="Submit" /></p>
                 </form>
             </div>
@@ -103,4 +93,4 @@ class RegisterPlayer extends React.Component
     }
 }
 
-export default RegisterPlayer
+export default Login

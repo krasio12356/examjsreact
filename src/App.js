@@ -1,5 +1,6 @@
 import './App.module.css';
 import React from 'react';
+
 import {
   BrowserRouter as Router,
   Switch,
@@ -9,6 +10,9 @@ import {
 import Home from './components/Home';
 import RegisterPlayer from './components/RegisterPlayer';
 import Play from './components/Play';
+import Login from './components/Login';
+import PlayerList from './components/PlayerList';
+
 class  App extends React.Component
 {
   constructor(props)
@@ -16,10 +20,22 @@ class  App extends React.Component
     super(props);
     this.state = 
     {
-      navHeightValue : undefined
+      navHeightValue : undefined,
+      temp : undefined
     }
     this.navHeight = React.createRef();
-    this.handleResize = this.handleResize.bind(this)
+    this.handleResize = this.handleResize.bind(this);
+    this.handleLogout = this.handleLogout.bind(this);
+    window['handleLogin'] = this.handleLogin.bind(this);
+  }
+  handleLogin()
+  {
+    this.setState({temp : undefined});
+  }
+  handleLogout()
+  {
+    sessionStorage.clear();
+    this.setState({temp : undefined});
   }
   handleResize()
   {
@@ -34,6 +50,28 @@ class  App extends React.Component
   render()
   {
     window.addEventListener('resize', this.handleResize);
+    let player = [];
+    player.push(
+              <li key='player0' className='navli'>
+                <Link to="/play" className='navlink'>Play</Link>
+              </li>);
+    player.push(          
+              <li key='player1' className='navli'>
+                <Link onClick={this.handleLogout} to='/' className='navlink'>Logout</Link>
+              </li>);
+    player.push(
+              <li key='player2' className='navli'>
+              <Link to='playerList' className='navlink'>Player List</Link>
+              </li>);         
+    let kibitzer = [];
+    kibitzer.push(
+              <li key='kibitzer1' className='navli'>
+                <Link to="/registerPlayer" className='navlink'>Register Player</Link>
+              </li>);
+    kibitzer.push(
+              <li key='kibitzer2' className='navli'>
+                <Link to="/login" className='navlink'>Login</Link>
+              </li>);
     return (
       <Router>
         <div>
@@ -42,23 +80,25 @@ class  App extends React.Component
               <li className='navli'>
                 <Link to="/" className='navlink'>Home</Link>
               </li>
-              <li className='navli'>
-                <Link to="/registerPlayer" className='navlink'>RegisterPlayer</Link>
-              </li>
-              <li className='navli'>
-                <Link to="/play" className='navlink'>Play</Link>
-              </li>
+              {sessionStorage.getItem('token') == null && kibitzer}
+              {sessionStorage.getItem('token') != null && player}
             </ul>
           </nav>
-
+          
           {/* A <Switch> looks through its children <Route>s and
               renders the first one that matches the current URL. */}
           <Switch>
             <Route path="/registerPlayer">
               <RegisterPlayer />
             </Route>
+            <Route path="/login">
+              <Login />
+            </Route>
             <Route path="/play">
               <Play ht={this.state.navHeightValue}/>
+            </Route>
+            <Route path="/playerList">
+              <PlayerList ht={this.state.navHeightValue}/>
             </Route>
             <Route path="/">
               <Home ht={this.state.navHeightValue}/>
