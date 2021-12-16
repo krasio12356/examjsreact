@@ -12,6 +12,9 @@ import RegisterPlayer from './components/RegisterPlayer';
 import Play from './components/Play';
 import Login from './components/Login';
 import PlayerList from './components/PlayerList';
+import ChallengesIn from './components/ChallengesIn';
+import ChallengesOut from './components/ChallengesOut';
+import CurrentGames from './components/CurrentGames';
 
 class  App extends React.Component
 {
@@ -49,6 +52,7 @@ class  App extends React.Component
   }
   render()
   {
+    window['playGameId'] = undefined;
     window.addEventListener('resize', this.handleResize);
     let player = [];
     player.push(
@@ -62,7 +66,19 @@ class  App extends React.Component
     player.push(
               <li key='player2' className='navli'>
               <Link to='playerList' className='navlink'>Player List</Link>
-              </li>);         
+              </li>);  
+    player.push(
+              <li key='player3' className='navli'>
+              <Link to='challengesIn' className='navlink'>Challenges in</Link>
+              </li>);
+    player.push(
+              <li key='player4' className='navli'>
+              <Link to='challengesOut' className='navlink'>Challenges out</Link>
+              </li>); 
+    player.push(
+              <li key='player5' className='navli'>
+              <Link to='currentGames' className='navlink'>Current games</Link>
+              </li>);               
     let kibitzer = [];
     kibitzer.push(
               <li key='kibitzer1' className='navli'>
@@ -99,6 +115,15 @@ class  App extends React.Component
             </Route>
             <Route path="/playerList">
               <PlayerList ht={this.state.navHeightValue}/>
+            </Route>
+            <Route path="/challengesIn">
+              <ChallengesIn ht={this.state.navHeightValue}/>
+            </Route>
+            <Route path="/challengesOut">
+              <ChallengesOut ht={this.state.navHeightValue}/>
+            </Route>
+            <Route path="/currentGames">
+              <CurrentGames ht={this.state.navHeightValue}/>
             </Route>
             <Route path="/">
               <Home ht={this.state.navHeightValue}/>
