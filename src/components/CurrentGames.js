@@ -12,13 +12,15 @@ class CurrentGames extends React.Component
       tmp: undefined
     }
     this.data = undefined;
+    this.transfer = undefined;
     this.playGame = this.playGame.bind(this);
   }
   
   playGame(e)
   {
     window['playGameId'] = e.target.id;
-    return <Redirect to='/play'/>
+    this.transfer = 'play';
+    this.setState({tmp: undefined});
   }
   async componentDidMount()
   {
@@ -31,8 +33,6 @@ class CurrentGames extends React.Component
                     body: JSON.stringify({authorization: sessionStorage.getItem('token')})
                 });
                 this.data = await response.json();
-                let x = this.data;
-                let y = x;
     }
     catch(er)
     {
@@ -43,6 +43,10 @@ class CurrentGames extends React.Component
   
   render()
   {
+    if (this.transfer == 'play')
+    {
+      return <Redirect to='/play'/>
+    }
     let trs = [];
     if (this.data != undefined && this.data.length != 0)
     {

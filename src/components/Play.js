@@ -51,7 +51,7 @@ class Play extends React.Component
                   ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
                   ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
                 ],
-            history: chess.initialHistory
+            history: chess.history
         };
         this.handleDragOver = this.handleDragOver.bind(this);
         this.handleDrag = this.handleDrag.bind(this);
@@ -59,6 +59,40 @@ class Play extends React.Component
         this.beginMove = undefined;
         this.endMove = undefined;
         this.movedPiece = undefined;
+        this.data = undefined;
+        this.yourcolour = undefined;
+        this.turn = undefined;
+    }
+
+    async componentDidMount()
+    {
+        if (window['playGameId'] !== undefined)
+        {
+            try
+            {
+                let response = await fetch('http://localhost:5000/currentGame',
+                {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    body: JSON.stringify({authorization: sessionStorage.getItem('token'), id: window['playGameId']})
+                });
+                this.data = await response.json();
+                let result = chess.playNotation(this.data.notation, chess.history);
+                if (result.result === 'ok');
+                {
+                    this.setState(
+                    {
+                        info: result.history[result.history.length - 1].board, 
+                        history: result.history
+                    });
+                }
+            }
+            catch(er)
+            {
+      
+            }
+            this.setState({tmp: undefined});
+        }
     }
 
     handleDragOver(ev) 
@@ -72,7 +106,7 @@ class Play extends React.Component
         this.beginMove = Number(ev.target.parentElement.id);
     }
       
-    handleDrop(ev) 
+    async handleDrop(ev) 
     {
         ev.preventDefault();
         if (ev.target.nodeName == 'DIV')
@@ -143,6 +177,29 @@ class Play extends React.Component
             <div className="frame" style={{height : `${this.props.ht}`}}>
                 <div className='board' style={{top : top, left : left, width : boardWidth, height : boardHeight}}>
                     {squares}
+                </div>
+                <div className='status'>
+                    <p id='yourcolour'>
+
+                    </p>
+                    <p id='smallCastle'>
+
+                    </p>
+                    <p id='bigCastle'>
+
+                    </p>
+                    <p id='surrender'>
+
+                    </p>
+                    <p id='offerDraw'>
+
+                    </p>
+                    <p id='demandDraw'>
+
+                    </p>
+                    <p id='turn'>
+
+                    </p>
                 </div>
                 <div className='notation' style={{top : notationTop}}>
                     <p id='whiteNotation'>

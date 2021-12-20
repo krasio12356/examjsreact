@@ -14,13 +14,13 @@ function twoDimOneDim(x, y)
 
 function twoDimLetter(x, y)
 {
-    return letters[x] + (8 - y);
+    return letters[y] + (8 - x);
 }
 
 function letterTwoDim(s)
 {
-    let x = Math.abs('a'.charCodeAt(0) - s.toLowerCase().charCodeAt(0));
-    let y = 8 - Number(s[1]);
+    let y = Math.abs('a'.charCodeAt(0) - s.toLowerCase().charCodeAt(0));
+    let x = 8 - Number(s[1]);
     return [x, y];   
 }
 

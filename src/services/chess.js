@@ -4,7 +4,7 @@ const BLACK = 0;
 
 const pieceColor = ['black', 'white'];
 
-let initialHistory = 
+let history = 
 [{
   board:
   [
@@ -77,7 +77,77 @@ let move =
   P : whitePawnMove
 }
 
-//console.log(isValidWhiteRookMove(chess, gameState, [4, 4], [5, 4]));
+//console.log(playNotation('Pe2-e4, Ng1-f3/pe7-e5, ng8-f6', history));
+
+function playNotation(notation, history)
+{
+  let white, black;
+  let h = historyDeepCopy(history);
+  let result;
+  let a = notation.split('/');
+  if (a[0] == '') 
+  {
+    return {result: 'ok', history};
+  }
+  if (a[1] == '')
+  {
+    return {result: playNote(white[0], h), history: h};
+  }
+  white = a[0].split(', ');
+  black = a[1].split(', ');
+  for (let i = 0; i < black.length; i++)
+  {
+    result = playNote(white[i], h);
+    if (result != 'ok') break;
+    result = playNote(black[i], h);
+    if (result != 'ok') break;
+  }
+  if (result == 'ok' && white.length > black.length)
+  {
+    result = playNote(white[white.length - 1], h);
+  }
+  return {result, history: h};
+}
+
+function historyDeepCopy(history)
+{
+  let answer = [];
+  for (let i = 0; i < history.length; i++)
+  {
+    answer.push(historyElementDeepCopy(history[i]));
+  }
+  return answer;
+}
+
+function playNote(note, history)
+{
+  let word = noteTransfer(note);
+  let initial = p.letterTwoDim(note[1] + note[2]);
+  let final = p.letterTwoDim(note[4] + note[5]);
+  let result = move[word[0]](history, initial, final);
+  return result;
+}
+
+function noteTransfer(note)
+{
+  if (note.startsWith('O-O-O'))
+  {
+    return 'Ke0-c0' + note.substring(5);
+  }
+  else if (note.startsWith('o-o-o'))
+  {
+    return 'ke8-c8' + note.substring(5);
+  }
+  else if (note.startsWith('O-O'))
+  {
+    return 'Ke0-g0' + note.substring(3);
+  }
+  else if (note.startsWith('o-o'))
+  {
+    return 'ke8-g8' + note.substring(3);
+  }
+  return note;
+}
 
 function whitePawnMove(history, initial, final)
 {
@@ -91,7 +161,7 @@ function whitePawnMove(history, initial, final)
   if (isBlack(he.board[final[0]][final[1]])) sign = ':';
   else sign = '-';
   he.board[initial[0]][initial[1]] = 'e';
-  if (final[0] == 7) he.board[final[0]][final[1]] = he.gameState.transform.whitePieces[he.gameState.transform.index];
+  if (final[0] == 0) he.board[final[0]][final[1]] = he.gameState.transform.whitePieces[he.gameState.transform.index];
   else he.board[final[0]][final[1]] = 'P';
   let transformation = he.board[final[0]][final[1]];
   if (transformation == 'P') transformation = '';
@@ -133,7 +203,7 @@ function whitePawnMove(history, initial, final)
   note = 'P' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + transformation;
   if (blackKingCheck(he.board)) note = note + '+';
   he.gameState.whiteNotation.push(note);
-  history.push([he]);
+  history.push(he);
   if (he.gameState.eog.threefold) return 'forcedraw';
   return 'ok';
 }
@@ -204,7 +274,7 @@ function whiteKingMove(history, initial, final)
   else note = 'K' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]);
   if (blackKingCheck(he.board)) note = note + '+';
   he.gameState.whiteNotation.push(note);
-  history.push([he]);
+  history.push(he);
   if (he.gameState.eog.threefold) return 'forcedraw';
   return 'ok';
 }
@@ -256,7 +326,7 @@ function whiteQueenMove(history, initial, final)
   note = 'Q' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]);
   if (blackKingCheck(he.board)) note = note + '+';
   he.gameState.whiteNotation.push(note);
-  history.push([he]);
+  history.push(he);
   if (he.gameState.eog.threefold) return 'forcedraw';
   return 'ok';
 }
@@ -308,7 +378,7 @@ function whiteBishopMove(history, initial, final)
   note = 'B' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]);
   if (blackKingCheck(he.board)) note = note + '+';
   he.gameState.whiteNotation.push(note);
-  history.push([he]);
+  history.push(he);
   if (he.gameState.eog.threefold) return 'forcedraw';
   return 'ok';
 }
@@ -360,7 +430,7 @@ function whiteKnightMove(history, initial, final)
   note = 'N' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]);
   if (blackKingCheck(he.board)) note = note + '+';
   he.gameState.whiteNotation.push(note);
-  history.push([he]);
+  history.push(he);
   if (he.gameState.eog.threefold) return 'forcedraw';
   return 'ok';
 }
@@ -421,7 +491,7 @@ function whiteRookMove(history, initial, final)
   note = 'R' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]);
   if (blackKingCheck(he.board)) note = note + '+';
   he.gameState.whiteNotation.push(note);
-  history.push([he]);
+  history.push(he);
   if (he.gameState.eog.threefold) return 'forcedraw';
   return 'ok';
 }
@@ -480,7 +550,7 @@ function blackPawnMove(history, initial, final)
   note = 'p' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + transformation;
   if (whiteKingCheck(he.board)) note = note + '+';
   he.gameState.blackNotation.push(note);
-  history.push([he]);
+  history.push(he);
   if (he.gameState.eog.threefold) return 'forcedraw';
   return 'ok';
 }
@@ -551,7 +621,7 @@ function blackKingMove(history, initial, final)
   else note = 'k' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]);
   if (whiteKingCheck(he.board)) note = note + '+';
   he.gameState.blackNotation.push(note);
-  history.push([he]);
+  history.push(he);
   if (he.gameState.eog.threefold) return 'forcedraw';
   return 'ok';
 }
@@ -603,7 +673,7 @@ function blackQueenMove(history, initial, final)
   note = 'q' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]);
   if (whiteKingCheck(he.board)) note = note + '+';
   he.gameState.blackNotation.push(note);
-  history.push([he]);
+  history.push(he);
   if (he.gameState.eog.threefold) return 'forcedraw';
   return 'ok';
 }
@@ -655,7 +725,7 @@ function blackBishopMove(history, initial, final)
   note = 'b' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]);
   if (whiteKingCheck(he.board)) note = note + '+';
   he.gameState.blackNotation.push(note);
-  history.push([he]);
+  history.push(he);
   if (he.gameState.eog.threefold) return 'forcedraw';
   return 'ok';
 }
@@ -707,7 +777,7 @@ function blackKnightMove(history, initial, final)
   note = 'n' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]);
   if (whiteKingCheck(he.board)) note = note + '+';
   he.gameState.blackNotation.push(note);
-  history.push([he]);
+  history.push(he);
   if (he.gameState.eog.threefold) return 'forcedraw';
   return 'ok';
 }
@@ -768,7 +838,7 @@ function blackRookMove(history, initial, final)
   note = 'r' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]);
   if (whiteKingCheck(he.board)) note = note + '+';
   he.gameState.blackNotation.push(note);
-  history.push([he]);
+  history.push(he);
   if (he.gameState.eog.threefold) return 'forcedraw';
   return 'ok';
 }
@@ -801,10 +871,7 @@ function hasWhiteValidMove(board, gameState)
         {
           for (let m = 0; m < 8; m++)
           {
-            if (isMove[board[i][j]](board, gameState, initial, [k, m]))
-            {
-             return true;
-            }
+            if (isMove[board[i][j]](board, gameState, initial, [k, m])) return true;
           }
         }
       }
@@ -1787,7 +1854,9 @@ function findBlackKing(board)
 
 export default
 {
-    initialHistory,
-    isMove,
-    move
+  history,
+  move,
+  isMove,
+  playNote,
+  playNotation
 }
