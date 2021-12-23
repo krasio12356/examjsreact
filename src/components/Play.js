@@ -56,17 +56,118 @@ class Play extends React.Component
         this.handleDragOver = this.handleDragOver.bind(this);
         this.handleDrag = this.handleDrag.bind(this);
         this.handleDrop = this.handleDrop.bind(this);
+        this.isMyTurn = this.isMyTurn.bind(this);
+        this.playMove = this.playMove.bind(this);
+        this.showPopup = this.showPopup.bind(this);
+        this.clean = this.clean.bind(this);
+        this.waitEnemy = this.waitEnemy.bind(this);
         this.beginMove = undefined;
         this.endMove = undefined;
         this.movedPiece = undefined;
         this.data = undefined;
         this.yourcolour = undefined;
         this.turn = undefined;
+        this.popupContent = undefined;
+        this.interval = undefined;
     }
 
-    async componentDidMount()
+    async waitEnemy()
     {
-        if (window['playGameId'] !== undefined)
+        let whiteNotation = this.state.history[this.state.history.length - 1].gameState.whiteNotation.join(', ');
+        let blackNotation = this.state.history[this.state.history.length - 1].gameState.blackNotation.join(', ');
+        let notation = whiteNotation + '/' + blackNotation;
+        try
+        {
+            let response = await fetch('http://localhost:5000/waitEnemy',
+            {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                body: JSON.stringify({authorization: sessionStorage.getItem('token'), id: sessionStorage.getItem('playGameId'), notation})
+            });
+            let data = await response.json();
+            if (data.notation !== 'not updated')
+            {
+                this.data.notation = data.notation;
+                this.setState({info: this.state.info});
+            }
+        }
+        catch(er)
+        {
+      
+        }
+    }
+
+    clean(pop)
+    {
+        document.body.removeChild(pop);
+    }
+
+    showPopup()
+    {
+        let pop = document.createElement('div');
+        pop.className = 'centerPopup';
+        pop.textContent = this.popupContent;
+        document.body.appendChild(pop);
+        setTimeout(this.clean, 2000, pop)
+    }
+
+    isMyTurn()
+    {
+        if (this.turn != undefined && this.turn.slice(-6) === this.yourcolour.substring(0, 6))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    async playMove()
+    {
+        if (this.isMyTurn() == false)
+        {
+            this.popupContent = "It's not your turn";
+            this.showPopup();
+            return;
+        }
+        let h = chess.historyDeepCopy(this.state.history);
+        let result = chess.move[this.movedPiece](h, p.oneDimTwoDim(this.beginMove), p.oneDimTwoDim(this.endMove));
+        if (result != 'ok')
+        {
+            this.popupContent = "Invalid move";
+            this.showPopup();
+            return;
+        }
+        this.setState(
+        {
+            info: h[h.length - 1].board, 
+            history: h
+        });
+        let whiteNotation = this.state.history[this.state.history.length - 1].gameState.whiteNotation.join(', ');
+        let blackNotation = this.state.history[this.state.history.length - 1].gameState.blackNotation.join(', ');
+        let notation = whiteNotation + '/' + blackNotation;
+        try
+        {
+            let response = await fetch('http://localhost:5000/playMove',
+            {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                body: JSON.stringify({authorization: sessionStorage.getItem('token'), id: sessionStorage.getItem('playGameId'), notation})
+            });
+            let data = await response.json();
+            if (data.notation !== 'not updated')
+            {
+                this.data.notation = data.notation;
+                this.setState({info: this.state.info});
+            }
+        }
+        catch(er)
+        {
+      
+        }
+    }
+
+    async componentDidUpdate()
+    {
+        if (sessionStorage.getItem('playGameId') !== undefined)
         {
             try
             {
@@ -74,10 +175,102 @@ class Play extends React.Component
                 {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    body: JSON.stringify({authorization: sessionStorage.getItem('token'), id: window['playGameId']})
+                    body: JSON.stringify({authorization: sessionStorage.getItem('token'), id: sessionStorage.getItem('playGameId')})
+                });
+                let data = await response.json();
+                if (data.notation !== this.data.notation)
+                {
+                    this.data.notation = data.notation;
+                    let result = chess.playNotation(this.data.notation, chess.history);
+                    this.turn = result.history[result.history.length - 1].gameState.turn;
+                    if (this.turn === chess.WHITE)
+                    {
+                        this.turn = 'Turn: Whites'
+                    }
+                    else
+                    {
+                        this.turn = 'Turn: Blacks'
+                    }
+                    if (sessionStorage.getItem('playername') === this.data.whites)
+                    {
+                        this.yourcolour = 'Whites: You / Blacks: ' + this.data.blacks;
+                    }
+                    else
+                    {
+                        this.yourcolour = 'Blacks: You / Whites: ' + this.data.whites;
+                    }
+                    if (this.isMyTurn() == false)
+                    {
+                        this.interval = setInterval(this.waitEnemy, 1000);
+                    }
+                    else
+                    {
+                        if (this.interval)
+                        {
+                            clearInterval(this.interval);
+                            this.interval = undefined;
+                        }
+                    }
+                    if (result.result === 'ok');
+                    {
+                        this.setState(
+                        {
+                            info: result.history[result.history.length - 1].board, 
+                            history: result.history
+                        });
+                    }
+                }
+            }
+            catch(er)
+            {
+      
+            }
+        }
+    }
+
+    async componentDidMount()
+    {
+        if (sessionStorage.getItem('playGameId') !== undefined)
+        {
+            try
+            {
+                let response = await fetch('http://localhost:5000/currentGame',
+                {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    body: JSON.stringify({authorization: sessionStorage.getItem('token'), id: sessionStorage.getItem('playGameId')})
                 });
                 this.data = await response.json();
                 let result = chess.playNotation(this.data.notation, chess.history);
+                this.turn = result.history[result.history.length - 1].gameState.turn;
+                if (this.turn === chess.WHITE)
+                {
+                    this.turn = 'Turn: Whites'
+                }
+                else
+                {
+                    this.turn = 'Turn: Blacks'
+                }
+                if (sessionStorage.getItem('playername') === this.data.whites)
+                {
+                    this.yourcolour = 'Whites: You / Blacks: ' + this.data.blacks;
+                }
+                else
+                {
+                    this.yourcolour = 'Blacks: You / Whites: ' + this.data.whites;
+                }
+                if (this.isMyTurn() == false)
+                {
+                    this.interval = setInterval(this.waitEnemy, 1000);
+                }
+                else
+                {
+                    if (this.interval)
+                    {
+                        clearInterval(this.interval);
+                        this.interval = undefined;
+                    }
+                }
                 if (result.result === 'ok');
                 {
                     this.setState(
@@ -91,7 +284,6 @@ class Play extends React.Component
             {
       
             }
-            this.setState({tmp: undefined});
         }
     }
 
@@ -106,7 +298,7 @@ class Play extends React.Component
         this.beginMove = Number(ev.target.parentElement.id);
     }
       
-    async handleDrop(ev) 
+    handleDrop(ev) 
     {
         ev.preventDefault();
         if (ev.target.nodeName == 'DIV')
@@ -117,16 +309,7 @@ class Play extends React.Component
         {
             this.endMove = Number(ev.target.parentElement.id);
         }
-        let arrangement = this.state.info;
-        let xyBegin = p.oneDimTwoDim(this.beginMove);
-        let xyEnd = p.oneDimTwoDim(this.endMove);
-        arrangement[xyBegin[1]][xyBegin[0]] = 'e';
-        arrangement[xyEnd[1]][xyEnd[0]] = this.movedPiece;
-        this.setState(
-            {
-                info: arrangement
-            }
-        );
+        this.playMove();
     }
 
     render()
@@ -135,6 +318,8 @@ class Play extends React.Component
         let squareWidth, squareWidthCSS;
         let squares = [];
         let pieces = [];
+        let whiteNotation = 'White notation: ' + this.state.history[this.state.history.length - 1].gameState.whiteNotation.join(', ');
+        let blackNotation = 'Black notation: ' + this.state.history[this.state.history.length - 1].gameState.blackNotation.join(', ');
         if (this.props.ht)
         {
             height = Number(this.props.ht.slice(0, -2));
@@ -169,44 +354,53 @@ class Play extends React.Component
                 let squareLeftCSS = squareLeft + 'px';
                 let colors = ['chocolate', 'brown'];
                 let colorIndex = (Math.floor(i / 8) % 2) ^ (i % 2);
-                squares.push(<div onDrop={this.handleDrop} onDragOver={this.handleDragOver} key={i} id={i.toString()} style={{position : 'absolute', backgroundColor : colors[colorIndex], top : squareTopCSS, left : squareLeftCSS, width : squareWidthCSS, height : squareWidthCSS}}><img style={{width : '100%', height : '100%' }} draggable='true' onDrag={this.handleDrag} className={this.state.info[p.oneDimTwoDim(i)[1]][p.oneDimTwoDim(i)[0]]} src={figures[this.state.info[p.oneDimTwoDim(i)[1]][p.oneDimTwoDim(i)[0]]]}/></div>);
+                squares.push(<div onDrop={this.handleDrop} onDragOver={this.handleDragOver} key={i} id={i.toString()} style={{position : 'absolute', backgroundColor : colors[colorIndex], top : squareTopCSS, left : squareLeftCSS, width : squareWidthCSS, height : squareWidthCSS}}><img style={{width : '100%', height : '100%' }} draggable='true' onDrag={this.handleDrag} className={this.state.info[p.oneDimTwoDim(i)[0]][p.oneDimTwoDim(i)[1]]} src={figures[this.state.info[p.oneDimTwoDim(i)[0]][p.oneDimTwoDim(i)[1]]]}/></div>);
             }
         }
-        
         return (
             <div className="frame" style={{height : `${this.props.ht}`}}>
                 <div className='board' style={{top : top, left : left, width : boardWidth, height : boardHeight}}>
                     {squares}
                 </div>
-                <div className='status'>
-                    <p id='yourcolour'>
-
-                    </p>
-                    <p id='smallCastle'>
-
-                    </p>
-                    <p id='bigCastle'>
-
-                    </p>
-                    <p id='surrender'>
-
-                    </p>
-                    <p id='offerDraw'>
-
-                    </p>
-                    <p id='demandDraw'>
-
-                    </p>
-                    <p id='turn'>
-
-                    </p>
-                </div>
                 <div className='notation' style={{top : notationTop}}>
+                    <div className='status'>
+                        <p id='yourcolour'>
+                            {this.yourcolour}
+                        </p>
+                        <p id='smallCastle'>
+                            <button className='niceButton'>
+                                Small castle
+                            </button>
+                        </p>
+                        <p id='bigCastle'>
+                            <button className='niceButton'>
+                                Big castle
+                            </button>
+                        </p>
+                        <p id='surrender'>
+                            <button className='niceButton'>
+                                Surrender
+                            </button>
+                        </p>
+                        <p id='offerDraw'>
+                            <button className='niceButton'>
+                                Offer a draw
+                            </button>
+                        </p>
+                        <p id='demandDraw'>
+                            <button className='niceButton'>
+                                Demand a draw
+                            </button>
+                        </p>
+                        <p id='turn'>
+                            {this.turn}
+                        </p>
+                    </div>
                     <p id='whiteNotation'>
-                        White notation:
+                        {whiteNotation}
                     </p>
                     <p id='blackNotation'>
-                        Black notation:
+                        {blackNotation}
                     </p>
                 </div>
             </div>

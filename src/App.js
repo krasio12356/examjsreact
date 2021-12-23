@@ -52,7 +52,6 @@ class  App extends React.Component
   }
   render()
   {
-    window['playGameId'] = undefined;
     window.addEventListener('resize', this.handleResize);
     let player = [];
     player.push(

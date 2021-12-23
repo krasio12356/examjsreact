@@ -2,14 +2,14 @@ let letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 
 function oneDimTwoDim(n)
 {
-    let y = Math.floor(n / 8);
-    let x = n % 8;
+    let x = Math.floor(n / 8);
+    let y = n % 8;
     return [x, y];
 }
 
 function twoDimOneDim(x, y)
 {
-    return y * 8 + x;
+    return x * 8 + y;
 }
 
 function twoDimLetter(x, y)

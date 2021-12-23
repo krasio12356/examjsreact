@@ -19,3 +19,32 @@
     width: 100%;
 }
 
+.status
+{
+    display: flex;
+    justify-content: center;
+    column-gap: 5px;
+}
+
+.niceButton
+{
+    background-color: coral;
+    color: white;
+    font-size: 1rem;
+    border-radius: 5px;
+}
+
+.centerPopup
+{
+    position: fixed;
+    color: white;
+    background-color: blue;
+    top: calc(50vh - 1.5rem);
+    left: calc(50vw - 25vmin);
+    height: calc(3rem);
+    width: calc(50vmin);
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

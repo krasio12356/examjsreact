@@ -1858,5 +1858,9 @@ export default
   move,
   isMove,
   playNote,
-  playNotation
+  playNotation,
+  WHITE,
+  BLACK,
+  pieceColor,
+  historyDeepCopy,
 }

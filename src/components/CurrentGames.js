@@ -18,7 +18,7 @@ class CurrentGames extends React.Component
   
   playGame(e)
   {
-    window['playGameId'] = e.target.id;
+    sessionStorage.setItem('playGameId', e.target.id);
     this.transfer = 'play';
     this.setState({tmp: undefined});
   }
