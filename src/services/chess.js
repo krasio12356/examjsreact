@@ -91,7 +91,8 @@ function playNotation(notation, history)
   }
   if (a[1] == '')
   {
-    return {result: playNote(white[0], h), history: h};
+    let resultValue = playNote(a[0], h);
+    return {result: resultValue, history: h};
   }
   white = a[0].split(', ');
   black = a[1].split(', ');
