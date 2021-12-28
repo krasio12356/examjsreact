@@ -32,7 +32,9 @@ let history =
       mate : false,
       stalemate: false,
       threefold: false,
-      fivefold: false
+      fivefold: false,
+      surrender: false,
+      drawContract: false
     },
     transform :
     {
@@ -123,8 +125,88 @@ function historyDeepCopy(history)
 function playNote(note, history)
 {
   let word = noteTransfer(note);
-  let initial = p.letterTwoDim(note[1] + note[2]);
-  let final = p.letterTwoDim(note[4] + note[5]);
+  if (word === 'SURRENDER')
+  {
+    let h = historyElementDeepCopy(history[history.length - 1]);
+    h.gameState.eog.surrender = true;
+    h.gameState.whiteNotation.push('SURRENDER');
+    history = [h];
+    return 'win';
+  }
+  if (word === 'surrender')
+  {
+    let h = historyElementDeepCopy(history[history.length - 1]);
+    h.gameState.eog.surrender = true;
+    h.gameState.blackNotation.push('surrender');
+    history = [h];
+    return 'win';
+  }
+  if (word === 'DEMANDDRAW')
+  {
+    let h = historyElementDeepCopy(history[history.length - 1]);
+    if (h.gameState.eog.threefold === false) return 'invalid';
+    h.gameState.whiteNotation.push('DEMANDDRAW');
+    history = [h];
+    return 'draw';
+  }
+  if (word === 'demanddraw')
+  {
+    let h = historyElementDeepCopy(history[history.length - 1]);
+    if (h.gameState.eog.threefold === false) return 'invalid';
+    h.gameState.blackNotation.push('demanddraw');
+    history = [h];
+    return 'draw';
+  }
+  if (word === 'OFFERDRAW')
+  {
+    let h = historyElementDeepCopy(history[history.length - 1]);
+    h.gameState.whiteNotation.push('OFFERDRAW');
+    h.gameState.turn = BLACK;
+    history.push(h);
+    return 'offerdraw';
+  }
+  if (word === 'offerdraw')
+  {
+    let h = historyElementDeepCopy(history[history.length - 1]);
+    h.gameState.blackNotation.push('offerdraw');
+    h.gameState.turn = WHITE;
+    history.push(h);
+    return 'offerdraw';
+  }
+  if (word === 'ACCEPTDRAW')
+  {
+    let h = historyElementDeepCopy(history[history.length - 1]);
+    if (h.gameState.blackNotation[h.gameState.blackNotation.length - 1] !== 'offerdraw') return 'invalid';
+    h.gameState.eog.drawContract = true;
+    h.gameState.whiteNotation.push('ACCEPTDRAW');
+    history.push(h);
+    return 'draw';
+  }
+  if (word === 'acceptdraw')
+  {
+    let h = historyElementDeepCopy(history[history.length - 1]);
+    if (h.gameState.whiteNotation[h.gameState.whiteNotation.length - 1] !== 'OFFERDRAW') return 'invalid';
+    h.gameState.eog.drawContract = true;
+    h.gameState.blackNotation.push('acceptdraw');
+    history.push(h);
+    return 'draw';
+  }
+  if (word === 'REJECTDRAW')
+  {
+    let h = historyElementDeepCopy(history[history.length - 1]);
+    if (h.gameState.blackNotation[h.gameState.blackNotation.length - 1] !== 'offerdraw') return 'invalid';
+    history.pop();
+    return 'rejectdraw'
+  }
+  if (word === 'rejectdraw')
+  {
+    let h = historyElementDeepCopy(history[history.length - 1]);
+    if (h.gameState.whiteNotation[h.gameState.whiteNotation.length - 1] !== 'OFFERDRAW') return 'invalid';
+    history.pop();
+    return 'rejectdraw'
+  }
+  let initial = p.letterTwoDim(word[1] + word[2]);
+  let final = p.letterTwoDim(word[4] + word[5]);
   let result = move[word[0]](history, initial, final);
   return result;
 }
@@ -133,7 +215,7 @@ function noteTransfer(note)
 {
   if (note.startsWith('O-O-O'))
   {
-    return 'Ke0-c0' + note.substring(5);
+    return 'Ke1-c1' + note.substring(5);
   }
   else if (note.startsWith('o-o-o'))
   {
@@ -141,7 +223,7 @@ function noteTransfer(note)
   }
   else if (note.startsWith('O-O'))
   {
-    return 'Ke0-g0' + note.substring(3);
+    return 'Ke1-g1' + note.substring(3);
   }
   else if (note.startsWith('o-o'))
   {
@@ -161,6 +243,11 @@ function whitePawnMove(history, initial, final)
   }
   if (isBlack(he.board[final[0]][final[1]])) sign = ':';
   else sign = '-';
+  if (he.gameState.enpassant[0] === final[0] && he.gameState.enpassant[1] === final[1])
+  {
+    sign = ':';
+    he.board[final[0] + 1][final[1]] = 'e';
+  }
   he.board[initial[0]][initial[1]] = 'e';
   if (final[0] == 0) he.board[final[0]][final[1]] = he.gameState.transform.whitePieces[he.gameState.transform.index];
   else he.board[final[0]][final[1]] = 'P';
@@ -169,7 +256,7 @@ function whitePawnMove(history, initial, final)
   he.gameState.turn = BLACK;
   if (initial[0] == 6 && final[0] == 4)
   {
-    he.gameState.enpassant = [3, initial[1]];
+    he.gameState.enpassant = [5, initial[1]];
   }
   else he.gameState.enpassant = [-1, -1];
   if (isBlackMate(he.board, he.gameState))
@@ -177,7 +264,8 @@ function whitePawnMove(history, initial, final)
     he.gameState.eog.mate = true;
     note = 'P' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + transformation + 'X';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'win';
   }
   if (isBlackStalemate(he.board, he.gameState))
@@ -185,7 +273,8 @@ function whitePawnMove(history, initial, final)
     he.gameState.eog.stalemate = true;
     note = 'P' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + transformation + '=';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 5)
@@ -193,7 +282,8 @@ function whitePawnMove(history, initial, final)
     he.gameState.eog.fivefold = true;
     note = 'P' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + transformation + '=';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 3)
@@ -242,7 +332,8 @@ function whiteKingMove(history, initial, final)
     else if (initial[1] == 4 && final[1] == 2) note = 'O-O-OX'
     else note = 'K' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + 'X';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'win';
   }
   if (isBlackStalemate(he.board, he.gameState))
@@ -252,7 +343,8 @@ function whiteKingMove(history, initial, final)
     else if (initial[1] == 4 && final[1] == 2) note = 'O-O-O='
     else note = 'K' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 5)
@@ -262,7 +354,8 @@ function whiteKingMove(history, initial, final)
     else if (initial[1] == 4 && final[1] == 2) note = 'O-O-O='
     else note = 'K' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 3)
@@ -295,20 +388,22 @@ function whiteQueenMove(history, initial, final)
   he.board[final[0]][final[1]] = 'Q';
   he.gameState.turn = BLACK;
   he.gameState.enpassant = [-1, -1];
-  if (isWhiteMate(he.board, he.gameState))
+  if (isBlackMate(he.board, he.gameState))
   {
     he.gameState.eog.mate = true;
     note = 'Q' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + 'X';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'win';
   }
-  if (isWhiteStalemate(he.board, he.gameState))
+  if (isBlackStalemate(he.board, he.gameState))
   {
     he.gameState.eog.stalemate = true;
     note = 'Q' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 5)
@@ -316,7 +411,8 @@ function whiteQueenMove(history, initial, final)
     he.gameState.eog.fivefold = true;
     note = 'Q' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 3)
@@ -352,15 +448,17 @@ function whiteBishopMove(history, initial, final)
     he.gameState.eog.mate = true;
     note = 'B' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + 'X';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'win';
   }
-  if (isWhiteStalemate(he.board, he.gameState))
+  if (isBlackStalemate(he.board, he.gameState))
   {
     he.gameState.eog.stalemate = true;
     note = 'B' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 5)
@@ -368,7 +466,8 @@ function whiteBishopMove(history, initial, final)
     he.gameState.eog.fivefold = true;
     note = 'B' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 3)
@@ -404,7 +503,8 @@ function whiteKnightMove(history, initial, final)
     he.gameState.eog.mate = true;
     note = 'N' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + 'X';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'win';
   }
   if (isBlackStalemate(he.board, he.gameState))
@@ -412,7 +512,8 @@ function whiteKnightMove(history, initial, final)
     he.gameState.eog.stalemate = true;
     note = 'N' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 5)
@@ -460,20 +561,22 @@ function whiteRookMove(history, initial, final)
   {
     he.gameState.whiteBigRookMoved = true;
   }
-  if (isWhiteMate(he.board, he.gameState))
+  if (isBlackMate(he.board, he.gameState))
   {
     he.gameState.eog.mate = true;
     note = 'R' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + 'X';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'win';
   }
-  if (isWhiteStalemate(he.board, he.gameState))
+  if (isBlackStalemate(he.board, he.gameState))
   {
     he.gameState.eog.stalemate = true;
     note = 'R' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 5)
@@ -481,7 +584,8 @@ function whiteRookMove(history, initial, final)
     he.gameState.eog.fivefold = true;
     note = 'R' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.whiteNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 3)
@@ -508,6 +612,11 @@ function blackPawnMove(history, initial, final)
   }
   if (isWhite(he.board[final[0]][final[1]])) sign = ':';
   else sign = '-';
+  if (he.gameState.enpassant[0] === final[0] && he.gameState.enpassant[1] === final[1])
+  {
+    sign = ':';
+    he.board[final[0] - 1][final[1]] = 'e';
+  }
   he.board[initial[0]][initial[1]] = 'e';
   if (final[0] == 7) he.board[final[0]][final[1]] = he.gameState.transform.blackPieces[he.gameState.transform.index];
   else he.board[final[0]][final[1]] = 'p';
@@ -524,7 +633,8 @@ function blackPawnMove(history, initial, final)
     he.gameState.eog.mate = true;
     note = 'p' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + transformation + 'X';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'win';
   }
   if (isWhiteStalemate(he.board, he.gameState))
@@ -532,7 +642,8 @@ function blackPawnMove(history, initial, final)
     he.gameState.eog.stalemate = true;
     note = 'p' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + transformation + '=';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 5)
@@ -540,7 +651,8 @@ function blackPawnMove(history, initial, final)
     he.gameState.eog.fivefold = true;
     note = 'p' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + transformation + '=';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 3)
@@ -589,7 +701,8 @@ function blackKingMove(history, initial, final)
     else if (initial[1] == 4 && final[1] == 2) note = 'o-o-oX'
     else note = 'k' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + 'X';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'win';
   }
   if (isWhiteStalemate(he.board, he.gameState))
@@ -599,7 +712,8 @@ function blackKingMove(history, initial, final)
     else if (initial[1] == 4 && final[1] == 2) note = 'o-o-o='
     else note = 'k' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 5)
@@ -609,7 +723,8 @@ function blackKingMove(history, initial, final)
     else if (initial[1] == 4 && final[1] == 2) note = 'o-o-o='
     else note = 'k' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 3)
@@ -647,7 +762,8 @@ function blackQueenMove(history, initial, final)
     he.gameState.eog.mate = true;
     note = 'q' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + 'X';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'win';
   }
   if (isWhiteStalemate(he.board, he.gameState))
@@ -655,7 +771,8 @@ function blackQueenMove(history, initial, final)
     he.gameState.eog.stalemate = true;
     note = 'q' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 5)
@@ -663,7 +780,8 @@ function blackQueenMove(history, initial, final)
     he.gameState.eog.fivefold = true;
     note = 'q' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 3)
@@ -699,7 +817,8 @@ function blackBishopMove(history, initial, final)
     he.gameState.eog.mate = true;
     note = 'b' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + 'X';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'win';
   }
   if (isWhiteStalemate(he.board, he.gameState))
@@ -707,7 +826,8 @@ function blackBishopMove(history, initial, final)
     he.gameState.eog.stalemate = true;
     note = 'b' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 5)
@@ -715,7 +835,8 @@ function blackBishopMove(history, initial, final)
     he.gameState.eog.fivefold = true;
     note = 'b' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 3)
@@ -751,7 +872,8 @@ function blackKnightMove(history, initial, final)
     he.gameState.eog.mate = true;
     note = 'n' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + 'X';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'win';
   }
   if (isWhiteStalemate(he.board, he.gameState))
@@ -759,7 +881,8 @@ function blackKnightMove(history, initial, final)
     he.gameState.eog.stalemate = true;
     note = 'n' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 5)
@@ -767,7 +890,8 @@ function blackKnightMove(history, initial, final)
     he.gameState.eog.fivefold = true;
     note = 'n' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 3)
@@ -812,7 +936,8 @@ function blackRookMove(history, initial, final)
     he.gameState.eog.mate = true;
     note = 'r' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + 'X';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'win';
   }
   if (isWhiteStalemate(he.board, he.gameState))
@@ -820,7 +945,8 @@ function blackRookMove(history, initial, final)
     he.gameState.eog.stalemate = true;
     note = 'r' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 5)
@@ -828,7 +954,8 @@ function blackRookMove(history, initial, final)
     he.gameState.eog.fivefold = true;
     note = 'r' + p.twoDimLetter(initial[0], initial[1]) + sign + p.twoDimLetter(final[0], final[1]) + '=';
     he.gameState.blackNotation.push(note);
-    history = [he];
+    history.length = 0;
+    history.push(he);
     return 'draw';
   }
   if (howFold(history) >= 3)
@@ -853,7 +980,7 @@ function howFold(someHistory)
   {
     if (historyElementIsEqual(control, someHistory[i]))
     {
-      control++;
+      count++;
     }
   }
   return control;

@@ -66,6 +66,12 @@ class RegisterPlayer extends React.Component
                     body: JSON.stringify(obj)
                 });
                 let data = await response.json();
+                if (data.player)
+                {
+                    this.errors = '<br>Player already exists.';
+                    this.setState({tmp: undefined});
+                    return;
+                }
                 sessionStorage.setItem('playername',data.playername);
                 sessionStorage.setItem('_id',data._id);
                 sessionStorage.setItem('token',data.token);

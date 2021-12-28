@@ -78,6 +78,11 @@ class PlayerList extends React.Component
     this.dataChallenge = undefined;
   } 
 
+  async componentDidMount()
+  {
+    await this.getPlayers();
+  }
+
   render()
   {  
     let trs = [];
@@ -101,31 +106,31 @@ class PlayerList extends React.Component
       );
       for (let i = 0; i < this.data.length; i++)
       {
-        trs.push(
-          <tr key={'trs' + i}>
-            <td>
-              {this.data[i].playername}
-            </td>
-            <td style={{textAlign : 'center'}}>
-              {this.data[i].rank}
-            </td>
-            <td style={{textAlign : 'center'}}>
-              {this.data[i].gamesPlayed.length}
-            </td>
-            <td style={{textAlign : 'center'}}>
-              <button id={this.data[i]._id} className='niceButton' onClick={this.handleChallenge}>
-                Challenge
-              </button>
-            </td>
-          </tr>
-        );
+        if (this.data[i].playername != sessionStorage.getItem('playername'))
+        {
+          trs.push(
+            <tr key={'trs' + i}>
+              <td>
+                {this.data[i].playername}
+              </td>
+              <td style={{textAlign : 'center'}}>
+                {this.data[i].rank}
+              </td>
+              <td style={{textAlign : 'center'}}>
+                {this.data[i].gamesPlayed.length}
+              </td>
+              <td style={{textAlign : 'center'}}>
+                <button id={this.data[i]._id} className='niceButton' onClick={this.handleChallenge}>
+                  Challenge
+                </button>
+              </td>
+            </tr>
+          );
+        }
       } 
     }
     return (
       <div className='playerListParent'>
-        <p className='buttonHolder'>
-          <button className='niceButton' onClick={this.getPlayers}>Get all players</button>
-        </p>
         <table className='plTable'>
           {trs}
         </table>

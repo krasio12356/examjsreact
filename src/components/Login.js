@@ -57,12 +57,17 @@ class Login extends React.Component
                     body: JSON.stringify(obj)
                 });
                 let data = await response.json();
+                if (data.error === 'invalid')
+                {
+                    this.errors += '<br>Player does not exist or password does not match.';
+                    this.setState({tmp: undefined});
+                    return;
+                }
                 sessionStorage.setItem('playername',data.playername);
                 sessionStorage.setItem('_id',data._id);
                 sessionStorage.setItem('token',data.token);
                 sessionStorage.setItem('rank', data.rank);
                 window['handleLogin']();
-                
                 this.redirect = true;
             }
             catch(er)

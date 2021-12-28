@@ -16,6 +16,7 @@ import React from "react";
 import p from '../services/position';
 import chess from '../services/chess';
 
+
 let figures =
 {
     p: blackPawn,
@@ -57,12 +58,22 @@ class Play extends React.Component
         this.handleDrag = this.handleDrag.bind(this);
         this.handleDrop = this.handleDrop.bind(this);
         this.isMyTurn = this.isMyTurn.bind(this);
+        this.isMyColour = this.isMyColour.bind(this);
         this.playMove = this.playMove.bind(this);
         this.showPopup = this.showPopup.bind(this);
         this.clean = this.clean.bind(this);
         this.waitEnemy = this.waitEnemy.bind(this);
         this.isEqual = this.isEqual.bind(this);
         this.deepCopyData = this.deepCopyData.bind(this);
+        this.smallCastle = this.smallCastle.bind(this);
+        this.bigCastle = this.bigCastle.bind(this);
+        this.getWinner = this.getWinner.bind(this);
+        this.getLooser = this.getLooser.bind(this);
+        this.surrender = this.surrender.bind(this);
+        this.offerDraw = this.offerDraw.bind(this);
+        this.acceptDraw = this.acceptDraw.bind(this);
+        this.rejectDraw = this.rejectDraw.bind(this);
+        this.demandDraw = this.demandDraw.bind(this);
         this.beginMove = undefined;
         this.endMove = undefined;
         this.movedPiece = undefined;
@@ -74,6 +85,8 @@ class Play extends React.Component
         this.turns = ['Turn: Blacks', 'Turn: Whites']
         this.popupContent = undefined;
         this.interval = undefined;
+        this.offerdraw = false;
+        this.completed = false;
     }
 
     async waitEnemy()
@@ -106,8 +119,54 @@ class Play extends React.Component
                     {
                         this.yourcolour = 'Blacks: You / Whites: ' + data.whites;
                     }
-                    if (this.result.result === 'ok');
+                    if (this.result.result === 'ok')
                     {
+                        this.state.info = this.result.history[this.result.history.length - 1].board;
+                        this.state.history = this.result.history;
+                    }
+                    else if (this.result.result === 'win')
+                    {
+                        this.completed = true;
+                        this.state.info = this.result.history[this.result.history.length - 1].board;
+                        this.state.history = this.result.history;
+                        let obj = {};
+                        obj.winner = this.getWinner();
+                        obj.looser = this.getLooser();
+                        obj._id = sessionStorage.getItem('playGameId');
+                        obj.authorization = sessionStorage.getItem('token');
+                        obj.notation = data.notation;
+                        await fetch('http://localhost:5000/win',
+                        {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                            body: JSON.stringify(obj)
+                        });
+                    }
+                    else if (this.result.result === 'draw')
+                    {
+                        this.completed = true;
+                        this.state.info = this.result.history[this.result.history.length - 1].board;
+                        this.state.history = this.result.history;
+                        let obj = {};
+                        obj._id = sessionStorage.getItem('playGameId');
+                        obj.authorization = sessionStorage.getItem('token');
+                        obj.notation = data.notation;
+                        await fetch('http://localhost:5000/draw',
+                        {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                            body: JSON.stringify(obj)
+                        });
+                    }
+                    else if (this.result.result === 'offerdraw')
+                    {
+                        this.offerdraw = true;
+                        this.state.info = this.result.history[this.result.history.length - 1].board;
+                        this.state.history = this.result.history;
+                    }
+                    else if (this.result.result === 'rejectdraw')
+                    {
+                        this.offerdraw = false;
                         this.state.info = this.result.history[this.result.history.length - 1].board;
                         this.state.history = this.result.history;
                     }
@@ -119,6 +178,23 @@ class Play extends React.Component
       
             }
         }
+    }
+
+    getWinner()
+    {
+        let he = this.state.history[this.state.history.length - 1];
+        let whiteNote = he.gameState.whiteNotation[he.gameState.whiteNotation.length - 1]
+        if (whiteNote.endsWith('X')) return this.data.whites;
+        if (whiteNote.endsWith('SURRENDER')) return this.data.blacks;
+        let blackNote = he.gameState.blackNotation[he.gameState.blackNotation.length - 1]
+        if (blackNote.endsWith('X')) return this.data.blacks;
+        if (blackNote.endsWith('surrender')) return this.data.whites;
+    }
+
+    getLooser()
+    {
+        if (this.getWinner() === this.data.whites) return this.data.blacks;
+        else return this.data.whites;
     }
 
     componentDidMount()
@@ -169,22 +245,282 @@ class Play extends React.Component
         return false;
     }
 
-    async playMove()
+    isMyColour()
     {
+        if (this.movedPiece.toUpperCase() === this.movedPiece)
+        {
+            if (this.yourcolour.startsWith('Whites'))
+            {
+                return true;
+            }
+            return false;
+        }
+        if (this.movedPiece.toLowerCase() === this.movedPiece)
+        {
+            if (this.yourcolour.startsWith('Blacks'))
+            {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    smallCastle()
+    {
+        if (this.yourcolour.startsWith('Whites'))
+        {
+            this.movedPiece = 'K';
+            this.beginMove = 60;
+            this.endMove = 62;
+            this.playMove();
+        }
+        else
+        {
+            this.movedPiece = 'k';
+            this.beginMove = 4;
+            this.endMove = 6;
+            this.playMove();
+        }
+    }
+
+    bigCastle()
+    {
+        if (this.yourcolour.startsWith('Whites'))
+        {
+            this.movedPiece = 'K';
+            this.beginMove = 60;
+            this.endMove = 58;
+            this.playMove();
+        }
+        else
+        {
+            this.movedPiece = 'k';
+            this.beginMove = 4;
+            this.endMove = 2;
+            this.playMove();
+        }
+    }
+
+    playMove()
+    {
+        if (this.completed)
+        {
+            this.popupContent = "Game is over";
+            this.showPopup();
+            return;
+        }
         if (this.isMyTurn() == false)
         {
             this.popupContent = "It's not your turn";
             this.showPopup();
             return;
         }
+        if (this.offerdraw)
+        {
+            this.popupContent = "Draw is offered. Either accept or reject";
+            this.showPopup();
+            return;
+        }
+        if (this.isMyColour() == false)
+        {
+            this.popupContent = "It's not your colour";
+            this.showPopup();
+            return;
+        }
         let h = chess.historyDeepCopy(this.state.history);
         let result = chess.move[this.movedPiece](h, p.oneDimTwoDim(this.beginMove), p.oneDimTwoDim(this.endMove));
-        if (result != 'ok')
+        if (result === 'invalid')
         {
             this.popupContent = "Invalid move";
             this.showPopup();
             return;
         }
+        let whiteNotation = h[h.length - 1].gameState.whiteNotation.join(', ');
+        let blackNotation = h[h.length - 1].gameState.blackNotation.join(', ');
+        let notation = whiteNotation + '/' + blackNotation;
+        this.data.notation = notation;
+    }
+
+    surrender()
+    {
+        if (this.completed)
+        {
+            this.popupContent = "Game is over";
+            this.showPopup();
+            return;
+        }
+        if (this.isMyTurn() == false)
+        {
+            this.popupContent = "It's not your turn";
+            this.showPopup();
+            return;
+        }
+        if (this.offerdraw)
+        {
+            this.popupContent = "Draw is offered. Either accept or reject";
+            this.showPopup();
+            return;
+        }
+        let h = chess.historyDeepCopy(this.state.history);
+        if (this.yourcolour.startsWith('Whites'))
+        {
+            chess.playNote('SURRENDER', h)
+        }
+        else
+        {
+            chess.playNote('surrender', h)
+        }
+        this.completed = true;
+        let whiteNotation = h[h.length - 1].gameState.whiteNotation.join(', ');
+        let blackNotation = h[h.length - 1].gameState.blackNotation.join(', ');
+        let notation = whiteNotation + '/' + blackNotation;
+        this.data.notation = notation;
+    }
+
+    offerDraw()
+    {
+        if (this.completed)
+        {
+            this.popupContent = "Game is over";
+            this.showPopup();
+            return;
+        }
+        if (this.isMyTurn() == false)
+        {
+            this.popupContent = "It's not your turn";
+            this.showPopup();
+            return;
+        }
+        if (this.offerdraw)
+        {
+            this.popupContent = "Draw is offered. Either accept or reject";
+            this.showPopup();
+            return;
+        }
+        let h = chess.historyDeepCopy(this.state.history);
+        if (this.yourcolour.startsWith('Whites'))
+        {
+            chess.playNote('OFFERDRAW', h)
+        }
+        else
+        {
+            chess.playNote('offerdraw', h)
+        }
+        this.offerdraw = true;
+        let whiteNotation = h[h.length - 1].gameState.whiteNotation.join(', ');
+        let blackNotation = h[h.length - 1].gameState.blackNotation.join(', ');
+        let notation = whiteNotation + '/' + blackNotation;
+        this.data.notation = notation;
+    }
+
+    acceptDraw()
+    {
+        if (this.completed)
+        {
+            this.popupContent = "Game is over";
+            this.showPopup();
+            return;
+        }
+        if (this.isMyTurn() == false)
+        {
+            this.popupContent = "It's not your turn";
+            this.showPopup();
+            return;
+        }
+        if (this.offerdraw == false)
+        {
+            this.popupContent = "Draw is not offered";
+            this.showPopup();
+            return;
+        }
+        let h = chess.historyDeepCopy(this.state.history);
+        if (this.yourcolour.startsWith('Whites'))
+        {
+            chess.playNote('ACCEPTDRAW', h)
+        }
+        else
+        {
+            chess.playNote('acceptdraw', h)
+        }
+        this.completed = true;
+        let whiteNotation = h[h.length - 1].gameState.whiteNotation.join(', ');
+        let blackNotation = h[h.length - 1].gameState.blackNotation.join(', ');
+        let notation = whiteNotation + '/' + blackNotation;
+        this.data.notation = notation;
+    }
+    
+    rejectDraw()
+    {
+        if (this.completed)
+        {
+            this.popupContent = "Game is over";
+            this.showPopup();
+            return;
+        }
+        if (this.isMyTurn() == false)
+        {
+            this.popupContent = "It's not your turn";
+            this.showPopup();
+            return;
+        }
+        if (this.offerdraw == false)
+        {
+            this.popupContent = "Draw is not offered";
+            this.showPopup();
+            return;
+        }
+        let h = chess.historyDeepCopy(this.state.history);
+        if (this.yourcolour.startsWith('Whites'))
+        {
+            chess.playNote('REJECTDRAW', h)
+        }
+        else
+        {
+            chess.playNote('rejectdraw', h)
+        }
+        this.offerdraw = false;
+        let whiteNotation = h[h.length - 1].gameState.whiteNotation.join(', ');
+        let blackNotation = h[h.length - 1].gameState.blackNotation.join(', ');
+        let notation = whiteNotation + '/' + blackNotation;
+        this.data.notation = notation;
+    }
+
+    demandDraw()
+    {
+        if (this.completed)
+        {
+            this.popupContent = "Game is over";
+            this.showPopup();
+            return;
+        }
+        if (this.isMyTurn() == false)
+        {
+            this.popupContent = "It's not your turn";
+            this.showPopup();
+            return;
+        }
+        if (this.offerdraw)
+        {
+            this.popupContent = "Draw is offered. Either accept or reject";
+            this.showPopup();
+            return;
+        }
+        let h = chess.historyDeepCopy(this.state.history);
+        if (h[h.length - 1].gameState.eog.threefold === false)
+        {
+            this.popupContent = "This position didn't occur three times";
+            this.showPopup();
+            return;
+        }
+        if (this.yourcolour.startsWith('Whites'))
+        {
+            chess.playNote('DEMANDDRAW', h)
+        }
+        else
+        {
+            chess.playNote('demandraw', h)
+        }
+        this.completed = true;
         let whiteNotation = h[h.length - 1].gameState.whiteNotation.join(', ');
         let blackNotation = h[h.length - 1].gameState.blackNotation.join(', ');
         let notation = whiteNotation + '/' + blackNotation;
@@ -272,28 +608,38 @@ class Play extends React.Component
                             {this.yourcolour}
                         </div>
                         <div id='smallCastle'>
-                            <button className='niceButton'>
+                            <button className='niceButton' onClick={this.smallCastle}>
                                 Small castle
                             </button>
                         </div>
                         <div id='bigCastle'>
-                            <button className='niceButton'>
+                            <button className='niceButton' onClick={this.bigCastle}>
                                 Big castle
                             </button>
                         </div>
                         <div id='surrender'>
-                            <button className='niceButton'>
+                            <button className='niceButton' onClick={this.surrender}>
                                 Surrender
                             </button>
                         </div>
                         <div id='offerDraw'>
                             <button className='niceButton'>
-                                Offer a draw
+                                Offer draw
+                            </button>
+                        </div>
+                        <div id='acceptDraw'>
+                            <button className='niceButton'>
+                                Accept draw
+                            </button>
+                        </div>
+                        <div id='rejectDraw'>
+                            <button className='niceButton'>
+                                Reject draw
                             </button>
                         </div>
                         <div id='demandDraw'>
                             <button className='niceButton'>
-                                Demand a draw
+                                Demand draw
                             </button>
                         </div>
                         <div id='turn'>
