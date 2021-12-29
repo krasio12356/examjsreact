@@ -107,6 +107,13 @@ class Play extends React.Component
                     this.update = true;
                     if (data.notation !== 'do nothing')
                     {
+                        let bw = data.notation.split('/');
+                        let w = bw[0].split(', ');
+                        let b = bw[1].split(', ');
+                        if (w[w.length - 1] === 'REJECTDRAW' || b[b.length - 1] === 'rejectdraw')
+                        {
+                            this.offerdraw = false;
+                        }
                         this.data = data;
                         this.result = chess.playNotation(data.notation, chess.history);
                     }
@@ -119,6 +126,7 @@ class Play extends React.Component
                     {
                         this.yourcolour = 'Blacks: You / Whites: ' + data.whites;
                     }
+
                     if (this.result.result === 'ok')
                     {
                         this.state.info = this.result.history[this.result.history.length - 1].board;
@@ -623,22 +631,22 @@ class Play extends React.Component
                             </button>
                         </div>
                         <div id='offerDraw'>
-                            <button className='niceButton'>
+                            <button className='niceButton' onClick={this.offerDraw}>
                                 Offer draw
                             </button>
                         </div>
-                        <div id='acceptDraw'>
+                        <div id='acceptDraw' onClick={this.acceptDraw}>
                             <button className='niceButton'>
                                 Accept draw
                             </button>
                         </div>
-                        <div id='rejectDraw'>
+                        <div id='rejectDraw' onClick={this.rejectDraw}>
                             <button className='niceButton'>
                                 Reject draw
                             </button>
                         </div>
                         <div id='demandDraw'>
-                            <button className='niceButton'>
+                            <button className='niceButton' onClick={this.demandDraw}>
                                 Demand draw
                             </button>
                         </div>
